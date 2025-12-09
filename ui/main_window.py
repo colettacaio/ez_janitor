@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
+from ui.components.folder_picker import FolderPicker
 from ui.tabs.documents_tab import DocumentsTab
 from ui.tabs.images_tab import ImagesTab
 from ui.tabs.videos_tab import VideosTab
@@ -20,6 +21,10 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
+        #FOLDER PICKER
+        self.folder_picker = FolderPicker()
+        layout.addWidget(self.folder_picker)
+
         #SCAN BUTTON
         self.scan_button = QPushButton("Scan")
         self.scan_button.setFixedHeight(40)
@@ -33,3 +38,6 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(DocumentsTab(), "Documents")
 
         layout.addWidget(self.tabs)
+
+    def run_scan(self):
+        print("Selected folders:", self.folder_picker.selected_folders)
