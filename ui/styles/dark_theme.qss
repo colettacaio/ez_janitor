@@ -56,3 +56,17 @@ FolderPicker QPushButton {
 FolderPicker QPushButton:hover {
     background-color: #4a4a4a;
 }
+QTableWidget {
+    gridline-color: #444;
+    background-color: #1e1e1e;
+    alternate-background-color: #262626;
+    color: #dddddd;
+    selection-background-color: #004225;
+}
+
+QHeaderView::section {
+    background-color: #2d2d2d;
+    padding: 4px;
+    border: 1px solid #444;
+    font-weight: bold;
+}

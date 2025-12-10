@@ -1,9 +1,12 @@
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLabel
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel
 )
 from PyQt6.QtCore import Qt
 
 from ui.components.folder_picker import FolderPicker
+from ui.components.file_table import FileTable
+
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -23,7 +26,14 @@ class MainWindow(QMainWindow):
         top_bar = QHBoxLayout()
         outer_layout.addLayout(top_bar)
 
-        #SPACER FOR SCAN BUTTON (SOON TO BE A SEARCH BAR)
+        #SEARCH BAR
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("Search files...")
+        self.search_bar.setFixedWidth(250)
+        self.search_bar.textChanged.connect(self.handle_search)
+        top_bar.addWidget(self.search_bar)
+
+        #SPACER
         top_bar.addStretch()
 
         #SCAN BUTTON remove stylesheet from here 
@@ -73,12 +83,18 @@ class MainWindow(QMainWindow):
         self.folder_picker_small.hide()
         self.center_layout.addWidget(self.folder_picker_small)
 
+        #FILE TABLE
+        self.file_table = FileTable()
+        self.file_table.hide()
+        self.center_layout.addWidget(self.file_table)
+
         #SIDEBAR REVEAL
         self.folder_picker_large.on_folder_selected = self.handle_folder_drop
         self.folder_picker_small.on_folder_selected = self.handle_folder_drop
 
+    #FOLDER DROP
     def handle_folder_drop(self, folders):
-        print("Folders:", folders)
+        print("Selected folders:", folders)
 
         #HIDE BIG DND, SHOW SMOL DND
         self.folder_picker_large.hide()
@@ -87,4 +103,16 @@ class MainWindow(QMainWindow):
         #SHOW SIDEBAR
         self.sidebar.show()
 
-        #POPULATE "ALLFILES" TABLE HERE
+        #WILL EVENTUALLY TRIGGER SCANNER THREAD
+        self.show_file_table()
+
+    
+    #SEARCH BAR LOGIC
+    def handle_search (self, text):
+        if hasattr(self, "file_table"):
+            self.file_table.apply_filter(text)
+
+    #REPLACE DND WITH TABLE AFTER SCAN
+    def show_file_table(self):
+        self.folder_picker_large.hide()
+        self.file_table.show()

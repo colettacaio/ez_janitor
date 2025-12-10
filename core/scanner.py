@@ -58,7 +58,7 @@ class ScanWorker(QThread):
                     pct = int((processed / total) * 100)
                     self.progress.emit(pct)
 
-        self.finished,emit()
+        self.finished.emit()
 
     def stop(self):
         self.running = False
