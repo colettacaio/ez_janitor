@@ -39,7 +39,29 @@ class FileTable(QWidget):
     #LOAD DATASET
     def load_data(self, rows):
         self.full_data = rows
-        self.apply_filter("")
+        self.table.setRowCount(0)
+
+        for row in rows:
+            row_index = self.table.rowCount()
+            self.table.insertRow(row_index)
+
+            self.table.setItem(row_index, 0, QTableWidgetItem(row["name"]))
+
+            size_item = QTableWidgetItem(self.format_size_gb(row["size"]))
+            size_item.setData(Qt.ItemDataRole.UserRole, row["size"])
+            self.table.setItem(row_index, 1, size_item)
+
+            last_open = QTableWidgetItem(self.format_timestamp(row["last_access"]))
+            last_open.setData(Qt.ItemDataRole.UserRole, row["last_access"])
+            self.table.setItem(row_index, 2, last_open)
+
+            last_mod = QTableWidgetItem(self.format_timestamp(row["last_modified"]))
+            last_mod.setData(Qt.ItemDataRole.UserRole, row["last_modified"])
+            self.table.setItem(row_index, 3, last_mod)
+
+            self.table.setItem(row_index, 4, QTableWidgetItem(row["extension"]))
+
+            self.table.setItem(row_index, 5, QTableWidgetItem(row["path"]))
 
     #APPLY FILTER
     def apply_filter(self, text):
@@ -47,72 +69,42 @@ class FileTable(QWidget):
         self.table.setRowCount(0)
 
         for row in self.full_data:
-            name = row["name"]
-            path = row["path"]
-            ext = row["extension"]
-
-            match = (
-                text in name.lower() or
-                text in path.lower() or
-                text in ext.lower()
-            )
-
-            if text and not match:
+            if text and not (
+                text in row["name"].lower()
+                or text in row["path"].lower()
+                or text in row["extension"].lower()
+            ):
                 continue
 
-            size = row["size"]
-            last_open = self.format_timestamp(row["last_access"])
-            last_mod = self.format_timestamp(row["last_modified"])
-            ext_display = ext
-
-            row_index = self.table.rowCount()
-            self.table.insertRow(row_index)
-
-            values = [
-                name,
-                str(size),
-                last_open,
-                last_mod,
-                ext_display,
-                path
-            ]
-
-            for col, v in enumerate(values):
-                item = QTableWidgetItem(v)
-                if col == 1:
-                    item.setData(Qt.ItemDataRole.UserRole, size)
-                self.table.setItem(row_index, col, item)
+            self.load_data([row])
 
     def open_context_menu(self, position):
         from PyQt6.QtWidgets import QMenu
 
-        menu = menu()
-        open_file_action = menu.addAction("Open file")
+        index = self.table.indexAt(position)
+        if not index.isValid():
+            return
+        
+        row = index.row()
+        path_item = self.table.item(row, 5)
+        if not path_item:
+            return
+        
+        path = path_item.text()
+
+        menu = QMenu(self)
+        open_file_action = menu.addAction("Open File")
         open_location_action = menu.addAction("Open file location")
 
         action = menu.exec(self.table.viewport().mapToGlobal(position))
         if not action:
             return
-        
-        selected = self.table.selectedItems()
-        if not selected:
-            return
-        
-        row = selected[0].row()
-        path = self.table.item(row, 5).text()
 
-        if action == open_file_action:
+        if action == open_file_action():
             os.startfile(path)
-
-        if action == open_location_action:
-            subprocess.run(["explorer", "/select", path])
-
-    def open_file(self, row, column):
-        path = self.table.item(row, 5).text()
-        try:
-            os.startfile(path)
-        except Exception as e:
-            print("Failed to open file:", e)
+        
+        elif action == open_location_action:
+            subprocess.run(["explorer", "/select,", path])
 
     #FILTER BY EXTENSION
     def apply_category_filter(self, extensions):
@@ -145,3 +137,7 @@ class FileTable(QWidget):
                 if col == 1:
                     item.setData(Qt.ItemDataRole.UserRole, row["size"])
                 self.table.setItem(row_index, col, item)
+
+    def format_size_gb(self, size_bytes):
+        gb = size_bytes / (1024 ** 3)
+        return f"{gb:.2f} GB"

@@ -93,12 +93,6 @@ QListWidget::item:hover {
 QTableWidget::item:hover {
     background-color: #2f2f2f;
 }
-
-/* Cursor feedback */
-QPushButton {
-    cursor: pointer;
-}
-
 QTableWidget {
     border: none;
 }
