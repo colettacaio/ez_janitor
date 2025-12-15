@@ -3,6 +3,9 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
+import os
+import subprocess
+
 
 
 class FileTable(QWidget):
@@ -21,6 +24,9 @@ class FileTable(QWidget):
         self.table.setSelectionBehavior(self.table.SelectionBehavior.SelectRows)
         self.table.setAlternatingRowColors(True)
         self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.open_context_menu)
+        self.table.cellDoubleClicked.connect(self.open_file)
 
         layout.addWidget(self.table)
 
@@ -76,6 +82,37 @@ class FileTable(QWidget):
                 if col == 1:
                     item.setData(Qt.ItemDataRole.UserRole, size)
                 self.table.setItem(row_index, col, item)
+
+    def open_context_menu(self, position):
+        from PyQt6.QtWidgets import QMenu
+
+        menu = menu()
+        open_file_action = menu.addAction("Open file")
+        open_location_action = menu.addAction("Open file location")
+
+        action = menu.exec(self.table.viewport().mapToGlobal(position))
+        if not action:
+            return
+        
+        selected = self.table.selectedItems()
+        if not selected:
+            return
+        
+        row = selected[0].row()
+        path = self.table.item(row, 5).text()
+
+        if action == open_file_action:
+            os.startfile(path)
+
+        if action == open_location_action:
+            subprocess.run(["explorer", "/select", path])
+
+    def open_file(self, row, column):
+        path = self.table.item(row, 5).text()
+        try:
+            os.startfile(path)
+        except Exception as e:
+            print("Failed to open file:", e)
 
     #FILTER BY EXTENSION
     def apply_category_filter(self, extensions):

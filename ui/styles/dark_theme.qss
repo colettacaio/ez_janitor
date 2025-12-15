@@ -70,3 +70,35 @@ QHeaderView::section {
     border: 1px solid #444;
     font-weight: bold;
 }
+/* Sidebar */
+QListWidget {
+    background-color: #1c1c1c;
+    border-right: 1px solid #333;
+}
+
+QListWidget::item {
+    padding: 10px;
+}
+
+QListWidget::item:selected {
+    background-color: #004225;
+    color: white;
+}
+
+QListWidget::item:hover {
+    background-color: #2a2a2a;
+}
+
+/* Table hover */
+QTableWidget::item:hover {
+    background-color: #2f2f2f;
+}
+
+/* Cursor feedback */
+QPushButton {
+    cursor: pointer;
+}
+
+QTableWidget {
+    border: none;
+}

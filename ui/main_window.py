@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QProgressBar, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel
+    QMainWindow, QWidget, QProgressBar, QMessageBox, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QLabel
 )
 from PyQt6.QtCore import Qt
 
@@ -8,6 +8,9 @@ from ui.components.file_table import FileTable
 
 from core.scanner import ScanWorker
 from core.db import Database
+
+from send2trash import send2trash
+
 
 
 
@@ -44,6 +47,22 @@ class MainWindow(QMainWindow):
         self.progress_bar.setVisible(False)
         top_bar.addWidget(self.progress_bar)
 
+        #DELETE BUTTON
+        self.delete_button = QPushButton("Delete")
+        self.delete_button.setFixedSize(80, 36)
+        self.delete_button.setStyleSheet("""
+    QPushButton {
+        background-color: #7a0000;
+        color: white;
+        border-radius: 6px;
+        padding: 6px;
+    }
+    QPushButton:hover { background-color: #a30000; }
+    QPushButton:pressed { background-color: #550000; }
+""")
+        self.delete_button.clicked.connect(self.delete_selected_files)
+        top_bar.addWidget(self.delete_button)
+
         #SPACER
         top_bar.addStretch()
 
@@ -70,6 +89,8 @@ class MainWindow(QMainWindow):
         #MAIN CONTENT AREA
         content_layout = QHBoxLayout()
         outer_layout.addLayout(content_layout)
+        outer_layout.setContentsMargins(10, 10, 10, 10)
+        outer_layout.setSpacing(8)
 
         #SIDEBAR
         self.sidebar = QListWidget()
@@ -178,6 +199,51 @@ class MainWindow(QMainWindow):
         self.sidebar.show()
 
         print("Scan complete. Files Loaded :)", len(rows))
+
+    #DELETE LOGIC
+    def delete_selected_files(self):
+        selected = self.file_table.table.selectedItems()
+
+        if not selected: 
+            QMessageBox.information(self, "No Selection", "Please select one or more files to delete")
+            return
+        
+        rows = sorted(set(item.row() for item in selected), reverse=True)
+
+        #CONFIRM DELETE
+        reply = QMessageBox.question(
+            self,
+            "Confirm Deletion",
+            f"Delete {len(rows)} file(s) and send them to Recycle Bin?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+        
+        for row in rows:
+            path = self.file_table.table.item(row, 5).text()
+            try:
+                send2trash(path)
+                print("Deleted: ", path)
+
+                cursor = self.db.conn.cursor()
+                cursor.execute("DELETE FROM files WHERE path = ?", (path,))
+                self.db.conn.commit()
+
+                self.file_table.full_data = [
+                    r for r in self.file_table.full_data
+                    if r["path"] != path
+                ]
+
+            except Exception as e:
+                print("Error deleting:", e)
+
+            self.file_table.table.removeRow(row)
+
+        current_item = self.sidebar.currentItem()
+        if current_item:
+            self.handle_sidebar_change(current_item, None)
 
     #SIDEBAR FILTERING
     def handle_sidebar_change(self, current, previous):
