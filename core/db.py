@@ -28,6 +28,13 @@ class Database:
             last_scanned REAL
         )
         """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+        """)
         
         self.conn.commit()
 
@@ -81,3 +88,18 @@ class Database:
     
     def close(self):
         self.conn.close()
+
+    def set_setting(self, key, value):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT INTO settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, str(value))
+        )
+        self.conn.commit()
+
+    def get_setting(self, key, default=None):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+        row = cursor.fetchone()
+        return row["value"] if row else default
