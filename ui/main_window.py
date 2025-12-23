@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt
 
 from ui.components.folder_picker import FolderPicker
 from ui.components.file_table import FileTable
+from ui.settings_dialog import SettingsDialog
 
 from core.scanner import ScanWorker
 from core.db import Database
@@ -46,6 +47,12 @@ class MainWindow(QMainWindow):
         self.progress_bar.setFixedWidth(200)
         self.progress_bar.setVisible(False)
         top_bar.addWidget(self.progress_bar)
+
+        #SETTINGS BUTTON
+        self.settings_button = QPushButton("CFG")
+        self.settings_button.setFixedSize(36, 36)
+        self.settings_button.clicked.connect(self.open_settings)
+        top_bar.insertWidget(0, self.settings_button)
 
         #DELETE BUTTON
         self.delete_button = QPushButton("Delete")
@@ -259,30 +266,35 @@ class MainWindow(QMainWindow):
 
         if category == "All Files":
             rows = self.db.get_all_files()
+            rows = self.apply_active_filters(rows)
             self.file_table.load_data(rows)
             return
                      
         if category == "Images":
             exts = image_exts
             rows = self.db.get_files_by_extensions(exts)
+            rows = self.apply_active_filters(rows)
             self.file_table.load_data(rows)
             return
         
         if category == "Videos":
             exts = video_exts
             rows = self.db.get_files_by_extensions(exts)
+            rows = self.apply_active_filters(rows)
             self.file_table.load_data(rows)
             return
         
         if category == "Audio":
             exts = audio_exts
             rows = self.db.get_files_by_extensions(exts)
+            rows = self.apply_active_filters(rows)
             self.file_table.load_data(rows)
             return
         
         if category == "Documents":
             exts = document_exts
             rows = self.db.get_files_by_extensions(exts)
+            rows = self.apply_active_filters(rows)
             self.file_table.load_data(rows)
             return
         
@@ -293,5 +305,18 @@ class MainWindow(QMainWindow):
             self.file_table.load_data(other_rows)
             return
         
+    #FILTER BY DAYS
+    def apply_active_filters(self, rows):
+        days = int(self.db.get_setting("days_unused", 0))
+        if days > 0:
+            rows = self.file_table.filter_by_days(rows, days)
+        return rows
 
+    #SETTINGS BUTTON
+    def open_settings(self):
+        dialog = SettingsDialog(self.db)
+        if dialog.exec():
+            current = self.sidebar.currentItem()
+            if current:
+                self.handle_sidebar_change(current, None)
       
